@@ -63,10 +63,19 @@ func handleClient(conn net.Conn) {
 		data_size_byte := make([]byte, 2)
 		var data_size uint16 = 0
 
+		fmt.Println(messageBuf)
+
 		if messageLen != 0 {
 			data_size_byte[0] = messageBuf[data_size_byte_pos1]
 			data_size_byte[1] = messageBuf[data_size_byte_pos2]
 			data_size = byte_to_int(data_size_byte)
+		}
+
+		if uint16(socket_data_size) < data_size {
+			//そこそこ大きい画像を送るときに最初に謎データがくっつくでスキップ
+			fmt.Print("data_size が無効")
+			data_size = 0
+			continue
 		}
 
 		if data_size == 0 {
@@ -81,7 +90,9 @@ func handleClient(conn net.Conn) {
 
 		//fmt.Println(string(messageBuf[:data_size]))
 		fmt.Println(tmp)
-		fmt.Println(messageBuf)
+
+		fmt.Println(data_size)
+		fmt.Println("######")
 		fmt.Fprintf(fp, "%v", string(messageBuf[:data_size]))
 
 		//ファイルに書き込み

@@ -6,9 +6,9 @@ import (
 )
 
 const soket_size int = 1024
-const data_size int = soket_size - 3
-const data_size_byte_pos1 int = data_size + 1
-const data_size_byte_pos2 int = data_size + 2
+const socket_data_size int = soket_size - 3
+const data_size_byte_pos1 int = socket_data_size + 1
+const data_size_byte_pos2 int = socket_data_size + 2
 
 func int_to_byte(i uint16) []byte {
 
