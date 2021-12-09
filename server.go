@@ -13,10 +13,10 @@ func main() {
 	port := ":55555"
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, port)
-	checkError(err)
+	CheckError(err)
 
 	listner, err := net.ListenTCP(protocol, tcpAddr)
-	checkError(err)
+	CheckError(err)
 
 	for {
 		conn, err := listner.Accept()
@@ -39,7 +39,7 @@ func handleClient(conn net.Conn) {
 	fmt.Println(addr.IP.String())
 
 	defer conn.Close()
-	messageBuf := make([]byte, soket_size)
+	messageBuf := make([]byte, SocketSize)
 	//fmt.Println(messageBuf)
 
 	_, err := conn.Read(messageBuf)
@@ -48,17 +48,15 @@ func handleClient(conn net.Conn) {
 	fmt.Println("filename: ", file_name)
 
 	fp, err := os.OpenFile(file_name, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	checkError(err)
-
-	defer fp.Close()
+	CheckError(err)
 
 	tmp := 0
 	conn.SetReadDeadline(time.Now().Add(50 * time.Second))
 	for {
-		messageBuf := make([]byte, soket_size)
+		messageBuf := make([]byte, SocketSize)
 		messageLen, err := conn.Read(messageBuf)
 		//fmt.Println(messageBuf)
-		checkError(err)
+		CheckError(err)
 
 		data_size_byte := make([]byte, 2)
 		var data_size uint16 = 0
@@ -66,14 +64,14 @@ func handleClient(conn net.Conn) {
 		fmt.Println(messageBuf)
 
 		if messageLen != 0 {
-			data_size_byte[0] = messageBuf[data_size_byte_pos1]
-			data_size_byte[1] = messageBuf[data_size_byte_pos2]
-			data_size = byte_to_int(data_size_byte)
+			data_size_byte[0] = messageBuf[DataSizeBytePos1]
+			data_size_byte[1] = messageBuf[DataSizeBytePos2]
+			data_size = ByteToInt(data_size_byte)
 		}
 
-		if uint16(socket_data_size) < data_size {
+		if uint16(SocketDataSize) < data_size {
 			//そこそこ大きい画像を送るときに最初に謎データがくっつくでスキップ
-			fmt.Print("data_size が無効")
+			fmt.Println("data_size が無効")
 			data_size = 0
 			continue
 		}
@@ -97,7 +95,10 @@ func handleClient(conn net.Conn) {
 
 		//ファイルに書き込み
 		tmp++
-
 	}
+	fp.Close()
+
+	//hash := file_hash(file_name)
+	//conn.Write(hash)
 
 }

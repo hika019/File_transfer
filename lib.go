@@ -1,33 +1,49 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"os"
 )
 
-const soket_size int = 1024
-const socket_data_size int = soket_size - 3
-const data_size_byte_pos1 int = socket_data_size + 1
-const data_size_byte_pos2 int = socket_data_size + 2
+const SocketSize int = 1024
+const SocketDataSize int = SocketSize - 3
+const DataSizeBytePos1 int = SocketDataSize + 1
+const DataSizeBytePos2 int = SocketDataSize + 2
 
-func int_to_byte(i uint16) []byte {
+func IntToByte(i uint16) []byte {
+	byteData := make([]byte, 2)
 
-	byte_data := make([]byte, 2)
-
-	byte_data[0] = uint8(i % 256)
-	byte_data[1] = uint8((i / 256) % 256)
-	return byte_data[:]
+	byteData[0] = uint8(i % 256)
+	byteData[1] = uint8((i / 256) % 256)
+	return byteData[:]
 }
 
-func byte_to_int(byte_data []byte) uint16 {
-	num := int(byte_data[0])
-	num += int(byte_data[1]) * 256
-	return uint16(num)
+func ByteToInt(byteData []byte) uint16 {
+	intData := int(byteData[0])
+	intData += int(byteData[1]) * 256
+	return uint16(intData)
 }
 
-func checkError(err error) {
+func CheckError(err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "fatal: error: ", err.Error())
 		os.Exit(1)
 	}
+}
+
+func FileHash(filename string) []byte {
+	r, err := os.Open(filename)
+	CheckError(err)
+
+	hash := sha256.New()
+
+	if _, err := io.Copy(hash, r); err != nil {
+		fmt.Fprintln(os.Stderr, "fatal: error: ", err.Error())
+		os.Exit(1)
+	}
+
+	v := hash.Sum(nil)
+	return v
 }
