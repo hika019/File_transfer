@@ -19,9 +19,9 @@ func main() {
 	myIP := "192.168.11.30"
 	myPort := 55556
 
-	file_name := os.Args[1]
+	fileName := os.Args[1]
 
-	fp, err := os.Open(file_name)
+	fp, err := os.Open(fileName)
 	CheckError(err)
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, serverIP+":"+serverPort)
@@ -36,31 +36,28 @@ func main() {
 	defer conn.Close()
 
 	defer fp.Close()
-	sent_binary := make([]byte, socketSize)
+	messageBuf := make([]byte, SocketSize)
 	tmp := 0
 
 	conn.SetDeadline(time.Now().Add(50 * time.Second))
-	fmt.Println(file_name)
-	conn.Write([]byte(file_name + ":"))
+	fmt.Println(fileName)
+	conn.Write([]byte(fileName + ":"))
 	fmt.Println("Sent the file name")
 
 	for {
-		bytes, err := fp.Read(sent_binary[:socketDataSize])
-		fmt.Println(bytes)
-		bytes_size := IntToByte(uint16(bytes))
+		messageLen, err := fp.Read(messageBuf[:SocketDataSize])
+		fmt.Println(messageLen)
+		messageBuf = IntToByte(messageBuf, uint16(messageLen))
 		tmp++
 
-		sent_binary[dataSizeBytePos1] = bytes_size[0]
-		sent_binary[dataSizeBytePos2] = bytes_size[1]
-		if bytes == 0 {
+		if messageLen == 0 {
 			break
 		}
 		CheckError(err)
 
-		//fmt.Println(sent_binary)
 		fmt.Println(tmp)
-		fmt.Println(sent_binary)
-		conn.Write(sent_binary)
+		fmt.Println(messageBuf)
+		conn.Write(messageBuf)
 	}
 	fmt.Println("sent the file data")
 	fmt.Println(tmp)

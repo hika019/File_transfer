@@ -12,17 +12,16 @@ const SocketDataSize int = SocketSize - 3
 const DataSizeBytePos1 int = SocketDataSize + 1
 const DataSizeBytePos2 int = SocketDataSize + 2
 
-func IntToByte(i uint16) []byte {
-	byteData := make([]byte, 2)
+func IntToByte(bin []byte, i uint16) []byte {
+	bin[DataSizeBytePos1] = uint8(i % 256)
+	bin[DataSizeBytePos2] = uint8((i / 256) % 256)
 
-	byteData[0] = uint8(i % 256)
-	byteData[1] = uint8((i / 256) % 256)
-	return byteData[:]
+	return bin[:]
 }
 
 func ByteToInt(byteData []byte) uint16 {
-	intData := int(byteData[0])
-	intData += int(byteData[1]) * 256
+	intData := int(byteData[DataSizeBytePos1])
+	intData += int(byteData[DataSizeBytePos2]) * 256
 	return uint16(intData)
 }
 
