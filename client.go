@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"reflect"
 	"time"
 )
 
@@ -56,11 +57,27 @@ func main() {
 		CheckError(err)
 
 		fmt.Println(tmp)
-		fmt.Println(messageBuf)
+		//fmt.Println(messageBuf)
 		conn.Write(messageBuf)
 	}
 	fmt.Println("sent the file data")
 	fmt.Println(tmp)
-	conn.Write([]byte("end sent data")) //これないと変なデータになる ← なぜ
+
+	hash := CreateSHA256(fileName)
+	fmt.Println(hash)
+
+	DownloadHash := make([]byte, SHA256ByteLen)
+
+	conn.SetDeadline(time.Now().Add(2 * time.Second))
+	_, err = conn.Read(DownloadHash)
+	CheckError(err)
+
+	if reflect.DeepEqual(hash, DownloadHash) {
+		fmt.Println("Complete File Transefer")
+		conn.Write([]byte{0})
+	} else {
+		fmt.Println("NOT Complete File Transefer!!")
+		conn.Write([]byte{1})
+	}
 
 }
