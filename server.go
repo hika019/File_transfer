@@ -50,47 +50,53 @@ func handleClient(conn net.Conn) {
 	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	CheckError(err)
 
-	tmp := 0
+	defer fp.Close()
+
+	receiveCount := 0
 	conn.SetReadDeadline(time.Now().Add(50 * time.Second))
 	for {
 		messageBuf := make([]byte, SocketSize)
 		messageLen, err := conn.Read(messageBuf)
-		//fmt.Println(messageBuf)
+
+		//clientが先に切断した際err=EOFになる
+		//err=EOFの場合messageLen=0で終了(エラー落ち回避)
+		if messageLen == 0 {
+			break
+		}
 		CheckError(err)
 
-		var dataSize uint16 = 0
+		var dataLen uint16 = 0
 
-		//fmt.Println(messageBuf)
+		fmt.Println(messageBuf)
 
-		if messageLen != 0 {
-			dataSize = ByteToInt(messageBuf)
-		}
+		dataLen = ByteToInt(messageBuf)
+		//fmt.Println(dataLen)
 
-		if uint16(SocketDataSize) < dataSize {
+		if uint16(SocketDataSize) < dataLen {
 			//そこそこ大きい画像を送るときに最初に謎データがくっつくでスキップ
 			fmt.Println("data_size が無効")
-			dataSize = 0
+			dataLen = 0
 			continue
 		}
 
-		if dataSize == 0 {
+		if dataLen == 0 {
 			fmt.Println("Downloaded file data")
-			fmt.Println(tmp)
+			fmt.Println(receiveCount)
 			break
 		}
 
-		fmt.Println(tmp)
+		fmt.Println(receiveCount)
 
-		fmt.Printf("%v byte", dataSize)
+		fmt.Printf("%v byte\n", dataLen)
+		fmt.Fprintf(fp, "%v", string(messageBuf[:dataLen]))
 		fmt.Println("######")
-		fmt.Fprintf(fp, "%v", string(messageBuf[:dataSize]))
-
 		//ファイルに書き込み
-		tmp++
+		receiveCount++
 	}
-	fp.Close()
-
-	//hash := file_hash(file_name)
-	//conn.Write(hash)
-
+	/*
+		hash := CreateFileHash(fileName)
+		fmt.Println(hash)
+		fmt.Println(len(hash))
+		//conn.Write(hash)
+	*/
 }
