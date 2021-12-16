@@ -56,7 +56,7 @@ func main() {
 		}
 		CheckError(err)
 
-		fmt.Println(tmp)
+		//fmt.Println(tmp)
 		//fmt.Println(messageBuf)
 		conn.Write(messageBuf)
 	}
@@ -66,18 +66,44 @@ func main() {
 	hash := CreateSHA256(fileName)
 	fmt.Println(hash)
 
+	//FIXME:ハッシュの確認の部分を実行するとファイルが送れない
+	/*
+		DownloadHash := make([]byte, SHA256ByteLen)
+
+		conn.SetDeadline(time.Now().Add(5 * time.Second))
+		DownloadHashLen, err := conn.Read(DownloadHash)
+		CheckError(err)
+
+		if reflect.DeepEqual(hash, DownloadHash[:DownloadHashLen]) {
+			fmt.Println("Complete File Transefer")
+			conn.Write([]byte{0})
+		} else {
+			fmt.Println("NOT Complete File Transefer!!")
+			conn.Write([]byte{1})
+		}
+	*/
+}
+
+func DownloadHash(conn net.Conn) []byte {
 	DownloadHash := make([]byte, SHA256ByteLen)
 
 	conn.SetDeadline(time.Now().Add(2 * time.Second))
-	_, err = conn.Read(DownloadHash)
+	_, err := conn.Read(DownloadHash)
 	CheckError(err)
+	return DownloadHash
+}
+
+//受信側のステータスの初期値が0のため正常を2とする
+func SendFileStatus(conn net.Conn, fileName string) {
+	hash := CreateSHA256(fileName)
+	fmt.Println(hash)
+	DownloadHash := DownloadHash(conn)
 
 	if reflect.DeepEqual(hash, DownloadHash) {
 		fmt.Println("Complete File Transefer")
-		conn.Write([]byte{0})
+		conn.Write([]byte{2})
 	} else {
 		fmt.Println("NOT Complete File Transefer!!")
 		conn.Write([]byte{1})
 	}
-
 }
