@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -41,27 +40,27 @@ func handleClient(conn net.Conn) {
 
 	defer conn.Close()
 
-	messageBuf := make([]byte, SocketSize)
+	messageBuf := make([]byte, SocketByte)
 	//fmt.Println(messageBuf)
 
 	_, err := conn.Read(messageBuf)
-	fileName := string(messageBuf)
-	fileName = fileName[:(strings.Index(fileName, ":"))]
+	CheckError(err)
+
+	fileNameLen := ByteToInt(messageBuf)
+	fileName := string(messageBuf[:fileNameLen])
 	fmt.Println("filename: ", fileName)
 
 	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	CheckError(err)
-
 	defer fp.Close()
 
 	receiveCount := 0
 	conn.SetReadDeadline(time.Now().Add(50 * time.Second))
 
 	for {
-		messageBuf := make([]byte, SocketSize)
+		messageBuf = make([]byte, SocketByte)
 		messageLen, err := conn.Read(messageBuf)
-		fmt.Println(messageLen)
-		CheckError(err)
+		//CheckError(err)
 
 		//clientが先に切断した際err=EOFになる
 		//err.Error()=EOFの場合messageLen=0  (エラー落ち回避)
@@ -73,27 +72,29 @@ func handleClient(conn net.Conn) {
 		var dataLen uint16 = 0
 
 		dataLen = ByteToInt(messageBuf)
-		fmt.Println(receiveCount)
 		//fmt.Println(messageBuf)
 
+		//時々変なデータがあるから回避
+		if messageBuf[DataSizeBytePos0] != uint8(1) {
+			break
+		}
+
 		//そこそこ大きい画像を送るときに謎データがくっつくのでスキップ
-		if uint16(SocketDataSize) < dataLen {
+		if uint16(SocketDataByte) < dataLen {
 			fmt.Println("data_size が無効")
 			dataLen = 0
 			continue
 		}
 
-		if dataLen == 0 {
-			fmt.Println("Downloaded file data")
-			fmt.Println(receiveCount)
-			break
-		}
+		/*
+			if dataLen == 0 {
+				fmt.Println("Downloaded file data")
+				fmt.Println(receiveCount)
+				break
+			}
+		*/
 
-		fmt.Println(receiveCount)
-		fmt.Println(messageBuf)
-		fmt.Printf("%v byte\n", dataLen)
-		fmt.Fprintf(fp, "%v", string(messageBuf))
-		fmt.Println("######")
+		fp.Write(messageBuf[:dataLen])
 		//ファイルに書き込み
 		receiveCount++
 	}

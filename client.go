@@ -37,25 +37,31 @@ func main() {
 	defer conn.Close()
 
 	defer fp.Close()
-	messageBuf := make([]byte, SocketSize)
+	messageBuf := strStaticByte(fileName)
+	//fmt.Println(messageBuf)
 	tmp := 0
 
 	conn.SetDeadline(time.Now().Add(50 * time.Second))
-	fmt.Println(fileName)
-	conn.Write([]byte(fileName + ":"))
+	fmt.Println(messageBuf)
+	conn.Write(messageBuf)
 	fmt.Println("Sent the file name")
 
 	for {
-		messageLen, err := fp.Read(messageBuf[:SocketDataSize])
-		fmt.Println(messageLen)
-		messageBuf = IntToByte(messageBuf, uint16(messageLen))
-		tmp++
-
+		messageBuf = make([]byte, SocketByte)
+		messageLen, err := fp.Read(messageBuf[:SocketDataByte])
 		if messageLen == 0 {
 			break
 		}
 		CheckError(err)
+		//fmt.Println(messageLen)
+		messageBuf = IntToByte(messageBuf, uint16(messageLen))
+		messageBuf[DataSizeBytePos0] = uint8(1)
 
+		if messageLen == 0 {
+			break
+		}
+
+		tmp++
 		//fmt.Println(tmp)
 		//fmt.Println(messageBuf)
 		conn.Write(messageBuf)
@@ -106,4 +112,21 @@ func SendFileStatus(conn net.Conn, fileName string) {
 		fmt.Println("NOT Complete File Transefer!!")
 		conn.Write([]byte{1})
 	}
+}
+
+func strStaticByte(str string) []byte {
+	data := make([]byte, SocketByte)
+	strByte := []byte(str)
+
+	if SocketDataByte < len(strByte) {
+		fmt.Printf("err: strStaticByte()/ strを%d byte以下にしてください\n", SocketDataByte)
+		os.Exit(1)
+	}
+
+	for i, v := range strByte {
+		data[i] = v
+	}
+
+	data = IntToByte(data, uint16(len(strByte)))
+	return data[:]
 }

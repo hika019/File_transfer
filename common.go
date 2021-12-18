@@ -7,10 +7,11 @@ import (
 	"os"
 )
 
-const SocketSize int = 1024
-const SocketDataSize int = SocketSize - 3
-const DataSizeBytePos1 int = SocketDataSize + 1
-const DataSizeBytePos2 int = SocketDataSize + 2
+const SocketByte int = 1024
+const SocketDataByte int = SocketByte - 4
+const DataSizeBytePos0 int = SocketDataByte + 0
+const DataSizeBytePos1 int = SocketDataByte + 1
+const DataSizeBytePos2 int = SocketDataByte + 2
 
 const SHA256ByteLen int = 32
 
@@ -29,7 +30,7 @@ func ByteToInt(byteData []byte) uint16 {
 
 func CheckError(err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fatal: error: ", err.Error())
+		fmt.Fprintln(os.Stderr, "fatal error: ", err.Error())
 		os.Exit(1)
 	}
 }
