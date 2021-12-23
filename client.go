@@ -38,7 +38,7 @@ func main() {
 
 	defer fp.Close()
 	messageBuf := strStaticByte(fileName)
-	//fmt.Println(messageBuf)
+	fmt.Println(messageBuf)
 	tmp := 0
 
 	conn.SetDeadline(time.Now().Add(50 * time.Second))
@@ -63,7 +63,7 @@ func main() {
 
 		tmp++
 		//fmt.Println(tmp)
-		//fmt.Println(messageBuf)
+		fmt.Println(messageBuf)
 		conn.Write(messageBuf)
 	}
 	fmt.Println("sent the file data")
@@ -76,7 +76,7 @@ func main() {
 	/*
 		DownloadHash := make([]byte, SHA256ByteLen)
 
-		conn.SetDeadline(time.Now().Add(5 * time.Second))
+		conn.SetDeadline(ti me.Now().Add(5 * time.Second))
 		DownloadHashLen, err := conn.Read(DownloadHash)
 		CheckError(err)
 

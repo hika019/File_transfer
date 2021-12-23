@@ -45,8 +45,14 @@ func handleClient(conn net.Conn) {
 
 	_, err := conn.Read(messageBuf)
 	CheckError(err)
-
+	fmt.Println(messageBuf)
 	fileNameLen := ByteToInt(messageBuf)
+
+	if fileNameLen == uint16(0) {
+		fmt.Println("ファイル名が不正")
+		os.Exit(1)
+	}
+
 	fileName := string(messageBuf[:fileNameLen])
 	fmt.Println("filename: ", fileName)
 
@@ -55,12 +61,11 @@ func handleClient(conn net.Conn) {
 	defer fp.Close()
 
 	receiveCount := 0
-	conn.SetReadDeadline(time.Now().Add(50 * time.Second))
 
 	for {
+		conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 		messageBuf = make([]byte, SocketByte)
-		messageLen, err := conn.Read(messageBuf)
-		//CheckError(err)
+		messageLen, _ := conn.Read(messageBuf)
 
 		//clientが先に切断した際err=EOFになる
 		//err.Error()=EOFの場合messageLen=0  (エラー落ち回避)
@@ -69,36 +74,34 @@ func handleClient(conn net.Conn) {
 		}
 		CheckError(err)
 
-		var dataLen uint16 = 0
+		dataLen := ByteToInt(messageBuf)
 
-		dataLen = ByteToInt(messageBuf)
-		//fmt.Println(messageBuf)
+		//表示しないとデータが変になる
+		fmt.Println(messageBuf)
 
 		//時々変なデータがあるから回避
 		if messageBuf[DataSizeBytePos0] != uint8(1) {
+			fmt.Println("download file")
+			fmt.Println(receiveCount)
 			break
+			//continue
 		}
 
 		//そこそこ大きい画像を送るときに謎データがくっつくのでスキップ
+
 		if uint16(SocketDataByte) < dataLen {
+			fmt.Println(messageBuf)
 			fmt.Println("data_size が無効")
 			dataLen = 0
 			continue
 		}
 
-		/*
-			if dataLen == 0 {
-				fmt.Println("Downloaded file data")
-				fmt.Println(receiveCount)
-				break
-			}
-		*/
-
 		fp.Write(messageBuf[:dataLen])
+
 		//ファイルに書き込み
 		receiveCount++
 	}
-
+	fmt.Println(receiveCount)
 	hash := CreateSHA256(fileName)
 	fmt.Println(hash)
 
