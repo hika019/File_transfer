@@ -65,29 +65,26 @@ func handleClient(conn net.Conn) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 		messageBuf = make([]byte, SocketByte)
-		messageLen, _ := conn.Read(messageBuf)
+		_, err := conn.Read(messageBuf)
 
 		//clientが先に切断した際err=EOFになる
 		//err.Error()=EOFの場合messageLen=0  (エラー落ち回避)
-		if messageLen == 0 {
+		dataLen := ByteToInt(messageBuf)
+
+		if dataLen == 0 {
+			fmt.Println("download file")
 			break
 		}
 		CheckError(err)
-
-		dataLen := ByteToInt(messageBuf)
 
 		//表示しないとデータが変になる
 		fmt.Println(messageBuf)
 
 		//時々変なデータがあるから回避
 		if messageBuf[DataSizeBytePos0] != uint8(1) {
-			fmt.Println("download file")
-			fmt.Println(receiveCount)
+			fmt.Println("変なデータのため切断")
 			break
-			//continue
 		}
-
-		//そこそこ大きい画像を送るときに謎データがくっつくのでスキップ
 
 		if uint16(SocketDataByte) < dataLen {
 			fmt.Println(messageBuf)
