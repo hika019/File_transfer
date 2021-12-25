@@ -41,12 +41,11 @@ func main() {
 	fmt.Println(messageBuf)
 	tmp := 0
 
-	conn.SetDeadline(time.Now().Add(50 * time.Second))
-	fmt.Println(messageBuf)
 	conn.Write(messageBuf)
 	fmt.Println("Sent the file name")
 
 	for {
+		conn.SetDeadline(time.Now().Add(10 * time.Second))
 		messageBuf = make([]byte, SocketByte)
 		messageLen, err := fp.Read(messageBuf[:SocketDataByte])
 		if messageLen == 0 {
@@ -61,10 +60,15 @@ func main() {
 			break
 		}
 
+		if tmp%200 == 0 {
+			time.Sleep(500 * time.Millisecond)
+			fmt.Println(tmp)
+		}
+
 		tmp++
-		//fmt.Println(tmp)
-		fmt.Println(messageBuf)
+		//fmt.Println(messageBuf)
 		conn.Write(messageBuf)
+
 	}
 	fmt.Println("sent the file data")
 	fmt.Println(tmp)
@@ -128,5 +132,6 @@ func strStaticByte(str string) []byte {
 	}
 
 	data = IntToByte(data, uint16(len(strByte)))
+	data[DataSizeBytePos0] = uint8(1)
 	return data[:]
 }

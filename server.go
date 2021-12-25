@@ -50,7 +50,7 @@ func handleClient(conn net.Conn) {
 
 	if fileNameLen == uint16(0) {
 		fmt.Println("ファイル名が不正")
-		os.Exit(1)
+		return
 	}
 
 	fileName := string(messageBuf[:fileNameLen])
@@ -72,13 +72,14 @@ func handleClient(conn net.Conn) {
 		dataLen := ByteToInt(messageBuf)
 
 		if dataLen == 0 {
+			fmt.Println(messageBuf)
 			fmt.Println("download file")
 			break
 		}
 		CheckError(err)
 
 		//表示しないとデータが変になる
-		fmt.Println(messageBuf)
+		//fmt.Println(messageBuf)
 
 		//時々変なデータがあるから回避
 		if messageBuf[DataSizeBytePos0] != uint8(1) {

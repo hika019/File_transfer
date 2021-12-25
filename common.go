@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-const SocketByte int = 2048
+const SocketByte int = 500
 const SocketDataByte int = SocketByte - 4
 const DataSizeBytePos0 int = SocketDataByte + 0
 const DataSizeBytePos1 int = SocketDataByte + 1
@@ -23,9 +23,9 @@ func IntToByte(bin []byte, i uint16) []byte {
 }
 
 func ByteToInt(byteData []byte) uint16 {
-	intData := int(byteData[DataSizeBytePos1])
-	intData += int(byteData[DataSizeBytePos2]) * 256
-	return uint16(intData)
+	dataLen := int(byteData[DataSizeBytePos1])
+	dataLen += int(byteData[DataSizeBytePos2]) * 256
+	return uint16(dataLen)
 }
 
 func CheckError(err error) {
