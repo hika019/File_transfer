@@ -56,7 +56,7 @@ func handleClient(conn net.Conn) {
 	fileName := string(messageBuf[:fileNameLen])
 	fmt.Println("filename: ", fileName)
 
-	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
 	CheckError(err)
 	defer fp.Close()
 
