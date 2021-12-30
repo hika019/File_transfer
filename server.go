@@ -13,10 +13,10 @@ func main() {
 	port := ":55555"
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, port)
-	CheckError(err)
+	CheckErrorExit(err)
 
 	listner, err := net.ListenTCP(protocol, tcpAddr)
-	CheckError(err)
+	CheckErrorExit(err)
 
 	for {
 		conn, err := listner.Accept()
@@ -30,7 +30,7 @@ func main() {
 }
 
 func handleClient(conn net.Conn) {
-
+	defer conn.Close()
 	addr, ok := conn.RemoteAddr().(*net.TCPAddr)
 	if !ok {
 		return
@@ -38,13 +38,17 @@ func handleClient(conn net.Conn) {
 
 	fmt.Println(addr.IP.String())
 
-	defer conn.Close()
-
 	messageBuf := make([]byte, SocketByte)
-	//fmt.Println(messageBuf)
 
-	_, err := conn.Read(messageBuf)
-	CheckError(err)
+	messageLen, err := conn.Read(messageBuf)
+	//EOFエラー回避
+	if messageLen == 0 {
+		return
+	}
+
+	if CheckError(err) {
+		return
+	}
 	fmt.Println(messageBuf)
 	fileNameLen := ByteToInt(messageBuf)
 
@@ -57,7 +61,9 @@ func handleClient(conn net.Conn) {
 	fmt.Println("filename: ", fileName)
 
 	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
-	CheckError(err)
+	if CheckError(err) {
+		return
+	}
 	defer fp.Close()
 
 	receiveCount := 0
@@ -71,60 +77,39 @@ func handleClient(conn net.Conn) {
 		//err.Error()=EOFの場合messageLen=0  (エラー落ち回避)
 		dataLen := ByteToInt(messageBuf)
 
-		if dataLen == 0 {
-			fmt.Println(messageBuf)
+		if messageBuf[DataSizeBytePos0] != uint8(1) {
 			fmt.Println("download file")
 			break
 		}
-		CheckError(err)
-
-		//表示しないとデータが変になる
-		//fmt.Println(messageBuf)
-
-		//時々変なデータがあるから回避
-		if messageBuf[DataSizeBytePos0] != uint8(1) {
-			fmt.Println("変なデータのため切断")
-			break
-		}
-
-		if uint16(SocketDataByte) < dataLen {
-			fmt.Println(messageBuf)
-			fmt.Println("data_size が無効")
-			dataLen = 0
-			continue
-		}
-
-		fp.Write(messageBuf[:dataLen])
+		CheckErrorExit(err)
 
 		//ファイルに書き込み
+		fp.Write(messageBuf[:dataLen])
 		receiveCount++
 	}
 	fmt.Println(receiveCount)
 	hash := CreateSHA256(fileName)
 	fmt.Println(hash)
 
-	//FIXME:ハッシュの確認の部分を実行するとファイルが送れない
-	/*
-		conn.Write(hash)
+	//hashを送る
+	conn.Write(hash)
+	fmt.Println("Send File hash")
 
-		fmt.Println("DownloadFileStatus")
-		conn.SetDeadline(time.Now().Add(2 * time.Second))
-		status := []byte{1}
-		_, err = conn.Read(status)
-		if !reflect.DeepEqual(status, []byte{0}) {
-			fmt.Println("NOT Complete File Transefer!!")
-		} else {
-			fmt.Println("Complete File Transefer")
-		}
-	*/
+	//ステータスのダウンロード
+	if DownloadFileStatus(conn) {
+		fmt.Println("Complete File Transefer")
+	} else {
+		fmt.Println("NOT Complete File Transefer!!")
+	}
+
 }
 
 func DownloadFileStatus(conn net.Conn) bool {
-	fmt.Println("DownloadFileStatus")
-
 	conn.SetDeadline(time.Now().Add(2 * time.Second))
-	status := make([]byte, 1)
+	status := []byte{1}
 	_, err := conn.Read(status)
-	CheckError(err)
-	return reflect.DeepEqual(status, []byte{2})
+	if CheckError(err) == false {
+		return false
+	}
+	return reflect.DeepEqual(status, []byte{0})
 }
