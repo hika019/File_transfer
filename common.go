@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-const SocketByte int = 300 //あまり大きいとバッファオーバーフローが起きる
+const SocketByte int = 200 //あまり大きいとバッファオーバーフローが起きる
 const SocketDataByte int = SocketByte - 4
 const DataSizeBytePos0 int = SocketDataByte + 0
 const DataSizeBytePos1 int = SocketDataByte + 1
@@ -28,7 +28,15 @@ func ByteToInt(byteData []byte) uint16 {
 	return uint16(dataLen)
 }
 
-func CheckError(err error) {
+func CheckError(err error) bool {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "fatal error: ", err.Error())
+		return true
+	}
+	return false
+}
+
+func CheckErrorExit(err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "fatal error: ", err.Error())
 		os.Exit(1)
