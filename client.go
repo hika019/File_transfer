@@ -29,7 +29,7 @@ func main() {
 	myAddr.IP = net.ParseIP(myIP)
 	myAddr.Port = myPort
 
-	delay := 600 //オーバーフローさせるため600
+	delay := 500 //オーバーフローさせるため600
 
 	for {
 		conn, err := net.DialTCP(protocol, myAddr, tcpAddr)
@@ -40,8 +40,7 @@ func main() {
 		if send(conn, fileName, delay) {
 			break
 		} else {
-			break
-			delay -= 30
+			delay -= 80
 		}
 
 		if delay <= 0 {
@@ -74,14 +73,12 @@ func send(conn net.Conn, fileName string, delay int) bool {
 			conn.Write([]byte{0})
 			break
 		}
-		if CheckError(err) {
+		if CheckError(err) == true {
 			return false
 		}
-		//fmt.Println(messageLen)
+
 		messageBuf = IntToByte(messageBuf, uint16(messageLen))
 		messageBuf[DataSizeBytePos0] = uint8(1)
-
-		//DownloadHash(conn)
 
 		//バッファオーバーフロー対策
 		if tmp%delay == 0 {
@@ -90,9 +87,13 @@ func send(conn net.Conn, fileName string, delay int) bool {
 		}
 
 		tmp++
-		//fmt.Println(messageBuf)
-		conn.Write(messageBuf)
 
+		dataLen, err := conn.Write(messageBuf)
+
+		//接続が切断されたらbreak
+		if dataLen == 0 {
+			break
+		}
 	}
 	fmt.Println("sent the file data")
 	fmt.Println(tmp)
