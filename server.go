@@ -36,7 +36,17 @@ func handleClient(conn net.Conn) {
 		return
 	}
 
-	fmt.Println(addr.IP.String())
+	senderIP := addr.IP.String()
+
+	fmt.Println(senderIP)
+
+	//dirの作成
+	if !Exists(senderIP) {
+		err := os.Mkdir(senderIP, 0777)
+		if CheckError(err) {
+			return
+		}
+	}
 
 	messageBuf := make([]byte, SocketByte)
 
@@ -60,7 +70,7 @@ func handleClient(conn net.Conn) {
 	fileName := string(messageBuf[:fileNameLen])
 	fmt.Println("filename: ", fileName)
 
-	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
+	fp, err := os.OpenFile(senderIP+"/"+fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
 	if CheckError(err) {
 		return
 	}
@@ -112,4 +122,9 @@ func DownloadFileStatus(conn net.Conn) bool {
 		return false
 	}
 	return reflect.DeepEqual(status, []byte{0})
+}
+
+func Exists(path string) bool {
+	f, err := os.Stat(path)
+	return !(os.IsNotExist(err) || !f.IsDir())
 }
