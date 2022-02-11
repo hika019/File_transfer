@@ -67,10 +67,10 @@ func handleClient(conn net.Conn) {
 		return
 	}
 
-	fileName := string(messageBuf[:fileNameLen])
+	fileName := senderIP + "/" + string(messageBuf[:fileNameLen])
 	fmt.Println("filename: ", fileName)
 
-	fp, err := os.OpenFile(senderIP+"/"+fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
+	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
 	if CheckError(err) {
 		return
 	}
@@ -79,22 +79,20 @@ func handleClient(conn net.Conn) {
 	receiveCount := 0
 
 	for {
-		conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		messageBuf = make([]byte, SocketByte)
 		_, err := conn.Read(messageBuf)
-
-		//clientが先に切断した際err=EOFになる
-		//err.Error()=EOFの場合messageLen=0  (エラー落ち回避)
+		//fmt.Println(messageBuf)
 		dataLen := ByteToInt(messageBuf)
-
+		CheckErrorExit(err)
 		if messageBuf[DataSizeBytePos0] != uint8(1) {
 			fmt.Println("download file")
 			break
 		}
-		CheckErrorExit(err)
 
 		//ファイルに書き込み
-		fp.Write(messageBuf[:dataLen])
+		_, err = fp.Write(messageBuf[:dataLen])
+		CheckError(err)
 		receiveCount++
 	}
 	fmt.Println(receiveCount)
@@ -106,19 +104,23 @@ func handleClient(conn net.Conn) {
 	fmt.Println("Send File hash")
 
 	//ステータスのダウンロード
-	if DownloadFileStatus(conn) {
+	if DownloadFileStatus(conn) == true {
 		fmt.Println("Complete File Transefer")
 	} else {
 		fmt.Println("NOT Complete File Transefer!!")
 	}
+	fmt.Println("")
 
 }
 
 func DownloadFileStatus(conn net.Conn) bool {
-	conn.SetDeadline(time.Now().Add(2 * time.Second))
+	conn.SetDeadline(time.Now().Add(1 * time.Second))
 	status := []byte{1}
 	_, err := conn.Read(status)
-	if CheckError(err) == false {
+
+	fmt.Println(CheckError(err))
+
+	if CheckError(err) == true {
 		return false
 	}
 	return reflect.DeepEqual(status, []byte{0})
