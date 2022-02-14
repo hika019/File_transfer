@@ -4,10 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"net"
 	"os"
 )
 
-const SocketByte int = 200 //あまり大きいとバッファオーバーフローが起きる
+const SocketByte int = 400 //あまり大きいとバッファオーバーフローが起きる
 const SocketDataByte int = SocketByte - 4
 const DataSizeBytePos0 int = SocketDataByte + 0
 const DataSizeBytePos1 int = SocketDataByte + 1
@@ -37,8 +38,7 @@ func CheckError(err error) bool {
 }
 
 func CheckErrorExit(err error) {
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "fatal error: ", err.Error())
+	if CheckError(err) {
 		os.Exit(1)
 	}
 }
@@ -54,4 +54,25 @@ func CreateSHA256(fileName string) []byte {
 
 	v := hash.Sum(nil)
 	return v
+}
+
+func MyAddr() string {
+	interfaces, err := net.Interfaces()
+	CheckErrorExit(err)
+
+	for _, inter := range interfaces {
+		addr, err := inter.Addrs()
+		CheckErrorExit(err)
+
+		for _, a := range addr {
+			if ipnet, ok := a.(*net.IPNet); ok {
+				if !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+					return ipnet.IP.String()
+				}
+			}
+		}
+
+	}
+
+	return ""
 }
