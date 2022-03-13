@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-const SocketByte int = 400 //あまり大きいとバッファオーバーフローが起きる
+const SocketByte int = 1200
 const SocketDataByte int = SocketByte - 4
 const DataSizeBytePos0 int = SocketDataByte + 0
 const DataSizeBytePos1 int = SocketDataByte + 1

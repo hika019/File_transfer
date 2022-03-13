@@ -62,11 +62,6 @@ func handleClient(conn net.Conn) {
 	fmt.Println(messageBuf)
 	fileNameLen := ByteToInt(messageBuf)
 
-	if fileNameLen == uint16(0) {
-		fmt.Println("ファイル名が不正")
-		return
-	}
-
 	fileName := senderIP + "/" + string(messageBuf[:fileNameLen])
 	fmt.Println("filename: ", fileName)
 
@@ -81,20 +76,22 @@ func handleClient(conn net.Conn) {
 	for {
 		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		messageBuf = make([]byte, SocketByte)
-		_, err := conn.Read(messageBuf)
-		//fmt.Println(messageBuf)
-		dataLen := ByteToInt(messageBuf)
-		CheckErrorExit(err)
-		if messageBuf[DataSizeBytePos0] != uint8(1) {
+		messageLen, err = conn.Read(messageBuf)
+
+		//EOFエラー回避
+		if messageLen == 0 {
 			fmt.Println("download file")
 			break
 		}
 
-		//ファイルに書き込み
-		_, err = fp.Write(messageBuf[:dataLen])
+		//dataLen := ByteToInt(messageBuf)
+		CheckErrorExit(err)
+
+		_, err = fp.Write(messageBuf[:messageLen])
 		CheckError(err)
 		receiveCount++
 	}
+
 	fmt.Println(receiveCount)
 	hash := CreateSHA256(fileName)
 	fmt.Println(hash)

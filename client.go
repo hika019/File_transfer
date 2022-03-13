@@ -9,18 +9,19 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) != 3 {
 		fmt.Fprintf(os.Stderr, "Usage: %s message", os.Args[0])
 		os.Exit(1)
 	}
 
 	protocol := "tcp"
-	serverIP := "192.168.11.50"
+	//serverIP := "192.168.11.50"
+	serverIP := os.Args[1]
 	serverPort := "55555"
-	myIP := "192.168.11.30"
+	myIP := MyAddr()
 	myPort := 55556
 
-	fileName := os.Args[1]
+	fileName := os.Args[2]
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, serverIP+":"+serverPort)
 	CheckErrorExit(err)
@@ -29,29 +30,16 @@ func main() {
 	myAddr.IP = net.ParseIP(myIP)
 	myAddr.Port = myPort
 
-	delay := 500 //オーバーフローさせるため600
+	conn, err := net.DialTCP(protocol, myAddr, tcpAddr)
+	CheckErrorExit(err)
 
-	for {
-		conn, err := net.DialTCP(protocol, myAddr, tcpAddr)
-		CheckErrorExit(err)
-
-		messageBuf := strStaticByte(fileName)
-		fmt.Println(messageBuf)
-		if send(conn, fileName, delay) {
-			break
-		} else {
-			delay -= 80
-		}
-
-		if delay <= 0 {
-			fmt.Println("delayが0です")
-			break
-		}
-	}
+	messageBuf := strStaticByte(fileName)
+	fmt.Println(messageBuf)
+	send(conn, fileName)
 
 }
 
-func send(conn net.Conn, fileName string, delay int) bool {
+func send(conn net.Conn, fileName string) bool {
 	defer conn.Close()
 	fp, err := os.Open(fileName)
 	CheckError(err)
@@ -59,36 +47,36 @@ func send(conn net.Conn, fileName string, delay int) bool {
 	defer fp.Close()
 
 	messageBuf := strStaticByte(fileName)
-	fmt.Println(messageBuf)
+	//fmt.Println(messageBuf)
 	tmp := 0
 
 	conn.Write(messageBuf)
 	fmt.Println("Sent the file name")
 
 	for {
-		conn.SetDeadline(time.Now().Add(1 * time.Second))
+
 		messageBuf = make([]byte, SocketByte)
-		messageLen, err := fp.Read(messageBuf[:SocketDataByte])
+		messageLen, err := fp.Read(messageBuf[:SocketByte])
 		if messageLen == 0 {
-			conn.Write([]byte{0})
+			conn.Write([]byte{})
 			break
 		}
 		if CheckError(err) == true {
 			return false
 		}
 
-		messageBuf = IntToByte(messageBuf, uint16(messageLen))
-		messageBuf[DataSizeBytePos0] = uint8(1)
+		messageBuf = messageBuf[:messageLen]
 
-		//バッファオーバーフロー対策
-		if tmp%delay == 0 {
-			time.Sleep(200 * time.Millisecond)
-			fmt.Println(tmp)
-		}
+		//messageBuf = IntToByte(messageBuf, uint16(messageLen))
+		//messageBuf[DataSizeBytePos0] = uint8(1)
 
 		tmp++
 
+		conn.SetDeadline(time.Now().Add(1 * time.Second))
 		dataLen, err := conn.Write(messageBuf)
+		if CheckError(err) == true {
+			return false
+		}
 
 		//接続が切断されたらbreak
 		if dataLen == 0 {
