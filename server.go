@@ -92,33 +92,14 @@ func handleClient(conn net.Conn) {
 		receiveCount++
 	}
 
-	fmt.Println(receiveCount)
-
-	//hashを送る
-	conn.Write(hash)
-	fmt.Println("Send File hash")
-
-	//ステータスのダウンロード
-	if DownloadFileStatus(conn) == true {
-		fmt.Println("Complete File Transefer")
+	if reflect.DeepEqual(hash, CreateSHA256(fileName)) {
+		fmt.Println("Consistency: Yes")
+		conn.Write([]byte{0})
 	} else {
-		fmt.Println("NOT Complete File Transefer!!")
+		fmt.Println("Consistency: No")
+		conn.Write([]byte{1})
 	}
-	fmt.Println("")
 
-}
-
-func DownloadFileStatus(conn net.Conn) bool {
-	conn.SetDeadline(time.Now().Add(1 * time.Second))
-	status := []byte{1}
-	_, err := conn.Read(status)
-
-	fmt.Println(CheckError(err))
-
-	if CheckError(err) == true {
-		return false
-	}
-	return reflect.DeepEqual(status, []byte{0})
 }
 
 func Exists(path string) bool {

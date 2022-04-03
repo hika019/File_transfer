@@ -91,7 +91,6 @@ func fileNameToByte(f string) []byte {
 	}
 
 	data = IntToByte(data, uint16(len(fByte)))
-
 	hash := CreateSHA256(f)
 
 	for i, v := range hash {

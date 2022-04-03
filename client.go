@@ -49,7 +49,7 @@ func send(conn net.Conn, fileName string) bool {
 	messageBuf := fileNameToByte(fileName)
 
 	conn.Write(messageBuf)
-	fmt.Println("Sent the file name")
+	fmt.Println("Sent the filename")
 	conn.SetDeadline(time.Now().Add(50 * time.Second))
 	for {
 
@@ -58,8 +58,6 @@ func send(conn net.Conn, fileName string) bool {
 		messageBuf = messageBuf[:messageLen]
 
 		if messageLen == 0 {
-			fmt.Println("hogee")
-			conn.Write([]byte{})
 			break
 		}
 		if CheckError(err) == true {
@@ -73,34 +71,24 @@ func send(conn net.Conn, fileName string) bool {
 
 	}
 	fmt.Println("sent the file data")
-	conn.SetDeadline(time.Now().Add(1 * time.Second))
-	return DownloadHashAndSendStatus(conn, fileName)
+
+	return DownloadStatus(conn)
 }
 
-func DownloadHash(conn net.Conn) []byte {
-	DownloadHash := make([]byte, SHA256ByteLen)
-	conn.SetDeadline(time.Now().Add(2 * time.Second))
-	_, err := conn.Read(DownloadHash)
-	CheckError(err)
-	return DownloadHash
-}
+func DownloadStatus(conn net.Conn) bool {
+	messageBuff := make([]byte, 2)
+	messageLen, err := conn.Read(messageBuff)
 
-func DownloadHashAndSendStatus(conn net.Conn, fileName string) bool {
-	fmt.Println("DownloadHashAndSendStatus")
-	hash := CreateSHA256(fileName)
-	fmt.Println(hash)
-
-	//hashをダウンロード
-	downloadHash := DownloadHash(conn)
-
-	//ステータスの送信
-	if reflect.DeepEqual(hash, downloadHash) {
-		fmt.Println("Complete File Transefer")
-		conn.Write([]byte{0})
-		return true
-	} else {
-		fmt.Println("NOT Complete File Transefer!!")
-		conn.Write([]byte{1})
+	if CheckError(err) == true {
 		return false
 	}
+
+	if reflect.DeepEqual(messageBuff[:messageLen], []byte{0}) {
+		fmt.Println("Consistency: Yes")
+		return true
+	} else {
+		fmt.Println("Consistency: No")
+		return false
+	}
+
 }
