@@ -60,10 +60,11 @@ func handleClient(conn net.Conn) {
 		return
 	}
 	fmt.Println(messageBuf)
-	fileNameLen := ByteToInt(messageBuf)
 
-	fileName := senderIP + "/" + string(messageBuf[:fileNameLen])
-	fmt.Println("filename: ", fileName)
+	fileName, hash := byteToFileName(messageBuf[:messageLen])
+
+	fileName = senderIP + "/" + fileName
+	fmt.Println("filename: ", fileName, hash)
 
 	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
 	if CheckError(err) {
@@ -84,16 +85,16 @@ func handleClient(conn net.Conn) {
 			break
 		}
 
-		//dataLen := ByteToInt(messageBuf)
 		CheckErrorExit(err)
 
 		_, err = fp.Write(messageBuf[:messageLen])
 		CheckError(err)
 		receiveCount++
+
 	}
 
 	fmt.Println(receiveCount)
-	hash := CreateSHA256(fileName)
+	hash = CreateSHA256(fileName)
 	fmt.Println(hash)
 
 	//hashを送る

@@ -76,3 +76,35 @@ func MyAddr() string {
 
 	return ""
 }
+
+func fileNameToByte(f string) []byte {
+	data := make([]byte, SocketByte)
+	fByte := []byte(f)
+
+	if SocketDataByte-SHA256ByteLen < len(fByte) {
+		fmt.Printf("err: strStaticByte()/ strを%d byte以下にしてください\n", SocketDataByte)
+		os.Exit(1)
+	}
+
+	for i, v := range fByte {
+		data[i] = v
+	}
+
+	data = IntToByte(data, uint16(len(fByte)))
+
+	hash := CreateSHA256(f)
+
+	for i, v := range hash {
+		data[SocketDataByte-SHA256ByteLen+i] = v
+	}
+
+	return data[:]
+}
+
+func byteToFileName(data []byte) (string, []byte) {
+	fileNameLen := ByteToInt(data)
+	filename := data[:fileNameLen]
+	hash := data[SocketDataByte-SHA256ByteLen : SocketDataByte]
+
+	return string(filename), hash
+}

@@ -33,7 +33,7 @@ func main() {
 	conn, err := net.DialTCP(protocol, myAddr, tcpAddr)
 	CheckErrorExit(err)
 
-	messageBuf := strStaticByte(fileName)
+	messageBuf := fileNameToByte(fileName)
 	fmt.Println(messageBuf)
 	send(conn, fileName)
 
@@ -46,18 +46,19 @@ func send(conn net.Conn, fileName string) bool {
 
 	defer fp.Close()
 
-	messageBuf := strStaticByte(fileName)
-	//fmt.Println(messageBuf)
-	tmp := 0
+	messageBuf := fileNameToByte(fileName)
 
 	conn.Write(messageBuf)
 	fmt.Println("Sent the file name")
-
+	conn.SetDeadline(time.Now().Add(50 * time.Second))
 	for {
 
 		messageBuf = make([]byte, SocketByte)
 		messageLen, err := fp.Read(messageBuf[:SocketByte])
+		messageBuf = messageBuf[:messageLen]
+
 		if messageLen == 0 {
+			fmt.Println("hogee")
 			conn.Write([]byte{})
 			break
 		}
@@ -65,33 +66,20 @@ func send(conn net.Conn, fileName string) bool {
 			return false
 		}
 
-		messageBuf = messageBuf[:messageLen]
-
-		//messageBuf = IntToByte(messageBuf, uint16(messageLen))
-		//messageBuf[DataSizeBytePos0] = uint8(1)
-
-		tmp++
-
-		conn.SetDeadline(time.Now().Add(1 * time.Second))
-		dataLen, err := conn.Write(messageBuf)
+		_, err = conn.Write(messageBuf)
 		if CheckError(err) == true {
 			return false
 		}
 
-		//接続が切断されたらbreak
-		if dataLen == 0 {
-			break
-		}
 	}
 	fmt.Println("sent the file data")
-	fmt.Println(tmp)
 	conn.SetDeadline(time.Now().Add(1 * time.Second))
 	return DownloadHashAndSendStatus(conn, fileName)
 }
 
 func DownloadHash(conn net.Conn) []byte {
 	DownloadHash := make([]byte, SHA256ByteLen)
-
+	conn.SetDeadline(time.Now().Add(2 * time.Second))
 	_, err := conn.Read(DownloadHash)
 	CheckError(err)
 	return DownloadHash
@@ -115,22 +103,4 @@ func DownloadHashAndSendStatus(conn net.Conn, fileName string) bool {
 		conn.Write([]byte{1})
 		return false
 	}
-}
-
-func strStaticByte(str string) []byte {
-	data := make([]byte, SocketByte)
-	strByte := []byte(str)
-
-	if SocketDataByte < len(strByte) {
-		fmt.Printf("err: strStaticByte()/ strを%d byte以下にしてください\n", SocketDataByte)
-		os.Exit(1)
-	}
-
-	for i, v := range strByte {
-		data[i] = v
-	}
-
-	data = IntToByte(data, uint16(len(strByte)))
-	data[DataSizeBytePos0] = uint8(1)
-	return data[:]
 }
