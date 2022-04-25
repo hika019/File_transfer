@@ -6,6 +6,8 @@ import (
 	"os"
 	"reflect"
 	"time"
+
+	"github.com/hika019/File_transfer/lib"
 )
 
 func main() {
@@ -18,22 +20,22 @@ func main() {
 	//serverIP := "192.168.11.50"
 	serverIP := os.Args[1]
 	serverPort := "55555"
-	myIP := MyAddr()
+	myIP := lib.MyAddr()
 	myPort := 55556
 
 	fileName := os.Args[2]
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, serverIP+":"+serverPort)
-	CheckErrorExit(err)
+	lib.CheckErrorExit(err)
 
 	myAddr := new(net.TCPAddr)
 	myAddr.IP = net.ParseIP(myIP)
 	myAddr.Port = myPort
 
 	conn, err := net.DialTCP(protocol, myAddr, tcpAddr)
-	CheckErrorExit(err)
+	lib.CheckErrorExit(err)
 
-	messageBuf := fileNameToByte(fileName)
+	messageBuf := lib.FileNameToByte(fileName)
 	fmt.Println(messageBuf)
 	send(conn, fileName)
 
@@ -42,30 +44,30 @@ func main() {
 func send(conn net.Conn, fileName string) bool {
 	defer conn.Close()
 	fp, err := os.Open(fileName)
-	CheckError(err)
+	lib.CheckError(err)
 
 	defer fp.Close()
 
-	messageBuf := fileNameToByte(fileName)
+	messageBuf := lib.FileNameToByte(fileName)
 
 	conn.Write(messageBuf)
 	fmt.Println("Sent the filename")
 	conn.SetDeadline(time.Now().Add(50 * time.Second))
 	for {
 
-		messageBuf = make([]byte, SocketByte)
-		messageLen, err := fp.Read(messageBuf[:SocketByte])
+		messageBuf = make([]byte, lib.SocketByte)
+		messageLen, err := fp.Read(messageBuf[:lib.SocketByte])
 		messageBuf = messageBuf[:messageLen]
 
 		if messageLen == 0 {
 			break
 		}
-		if CheckError(err) == true {
+		if lib.CheckError(err) == true {
 			return false
 		}
 
 		_, err = conn.Write(messageBuf)
-		if CheckError(err) == true {
+		if lib.CheckError(err) == true {
 			return false
 		}
 
@@ -79,7 +81,7 @@ func DownloadStatus(conn net.Conn) bool {
 	messageBuff := make([]byte, 2)
 	messageLen, err := conn.Read(messageBuff)
 
-	if CheckError(err) == true {
+	if lib.CheckError(err) == true {
 		return false
 	}
 

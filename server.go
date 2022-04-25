@@ -6,6 +6,8 @@ import (
 	"os"
 	"reflect"
 	"time"
+
+	"github.com/hika019/File_transfer/lib"
 )
 
 func main() {
@@ -13,10 +15,10 @@ func main() {
 	port := ":55555"
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, port)
-	CheckErrorExit(err)
+	lib.CheckErrorExit(err)
 
 	listner, err := net.ListenTCP(protocol, tcpAddr)
-	CheckErrorExit(err)
+	lib.CheckErrorExit(err)
 
 	for {
 		conn, err := listner.Accept()
@@ -43,12 +45,12 @@ func handleClient(conn net.Conn) {
 	//dirの作成
 	if !Exists(senderIP) {
 		err := os.Mkdir(senderIP, 0777)
-		if CheckError(err) {
+		if lib.CheckError(err) {
 			return
 		}
 	}
 
-	messageBuf := make([]byte, SocketByte)
+	messageBuf := make([]byte, lib.SocketByte)
 
 	messageLen, err := conn.Read(messageBuf)
 	//EOFエラー回避
@@ -56,18 +58,18 @@ func handleClient(conn net.Conn) {
 		return
 	}
 
-	if CheckError(err) {
+	if lib.CheckError(err) {
 		return
 	}
 	fmt.Println(messageBuf)
 
-	fileName, hash := byteToFileName(messageBuf[:messageLen])
+	fileName, hash := lib.ByteToFileName(messageBuf[:messageLen])
 
 	fileName = senderIP + "/" + fileName
 	//fmt.Println("filename: ", fileName, hash)
 
 	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
-	if CheckError(err) {
+	if lib.CheckError(err) {
 		return
 	}
 	defer fp.Close()
@@ -76,7 +78,7 @@ func handleClient(conn net.Conn) {
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-		messageBuf = make([]byte, SocketByte)
+		messageBuf = make([]byte, lib.SocketByte)
 		messageLen, err = conn.Read(messageBuf)
 
 		//EOFエラー回避
@@ -85,14 +87,14 @@ func handleClient(conn net.Conn) {
 			break
 		}
 
-		CheckErrorExit(err)
+		lib.CheckErrorExit(err)
 
 		_, err = fp.Write(messageBuf[:messageLen])
-		CheckError(err)
+		lib.CheckError(err)
 		receiveCount++
 	}
 
-	if reflect.DeepEqual(hash, CreateSHA256(fileName)) {
+	if reflect.DeepEqual(hash, lib.CreateSHA256(fileName)) {
 		fmt.Println("Consistency: Yes")
 		conn.Write([]byte{0})
 	} else {
