@@ -77,7 +77,7 @@ func MyAddr() string {
 	return ""
 }
 
-func fileNameToByte(f string) []byte {
+func FileNameToByte(f string) []byte {
 	data := make([]byte, SocketByte)
 	fByte := []byte(f)
 
@@ -100,7 +100,7 @@ func fileNameToByte(f string) []byte {
 	return data[:]
 }
 
-func byteToFileName(data []byte) (string, []byte) {
+func ByteToFileName(data []byte) (string, []byte) {
 	fileNameLen := ByteToInt(data)
 	filename := data[:fileNameLen]
 	hash := data[SocketDataByte-SHA256ByteLen : SocketDataByte]
