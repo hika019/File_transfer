@@ -9,12 +9,12 @@ import (
 )
 
 type SecretKey struct {
-	d *big.Int
+	d []byte
 }
 
 type PublicKey struct {
-	n *big.Int
-	e *big.Int
+	n []byte
+	e []byte
 }
 
 //k=ビット数(2048~)
@@ -46,9 +46,11 @@ func GenKeyRSA(k int) (SecretKey, PublicKey) {
 
 	d := new(big.Int)
 	d.Exp(e, big.NewInt(-1), phi)
+	fmt.Println()
+	fmt.Printf("%x\n", d.Bytes())
 
-	secretKey := SecretKey{d: d}
-	publickKey := PublicKey{n: n, e: e}
+	secretKey := SecretKey{d: d.Bytes()}
+	publickKey := PublicKey{n: n.Bytes(), e: e.Bytes()}
 
 	return secretKey, publickKey
 }
@@ -61,16 +63,22 @@ func gcd(m *big.Int, n *big.Int) *big.Int {
 	return z
 }
 
-func EnCryptRSA(key PublicKey, s *big.Int) *big.Int {
+func EnCryptRSA(key PublicKey, s []byte) []byte {
 	c := new(big.Int)
 
-	c.Exp(s, key.e, key.n)
-	return c
+	c.Exp(ByteToBigInt(s), ByteToBigInt(key.e), ByteToBigInt(key.n))
+	return c.Bytes()
 }
 
-func DeCryptRSA(sKey SecretKey, pKey PublicKey, c *big.Int) *big.Int {
+func ByteToBigInt(b []byte) *big.Int {
+	a := new(big.Int)
+	a.SetBytes(b)
+	return a
+}
+
+func DeCryptRSA(sKey SecretKey, pKey PublicKey, c []byte) []byte {
 	s := new(big.Int)
 
-	s.Exp(c, sKey.d, pKey.n)
-	return s
+	s.Exp(ByteToBigInt(c), ByteToBigInt(sKey.d), ByteToBigInt(pKey.n))
+	return s.Bytes()
 }
