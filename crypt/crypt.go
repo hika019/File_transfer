@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+
+	"github.com/hika019/File_transfer/lib"
 )
 
 type SecretKey struct {
@@ -16,14 +18,14 @@ type PublicKey struct {
 }
 
 //k=ビット数(2048~)
-func genKey(k int) (SecretKey, PublicKey) {
+func GenKey(k int) (SecretKey, PublicKey) {
 	fmt.Println("genKey")
 	p, err := rand.Prime(rand.Reader, k/2)
-	CheckErrorExit(err)
+	lib.CheckErrorExit(err)
 	q := p
 	for p == q {
 		q, err = rand.Prime(rand.Reader, k/2)
-		CheckErrorExit(err)
+		lib.CheckErrorExit(err)
 	}
 
 	n := new(big.Int)
@@ -39,7 +41,7 @@ func genKey(k int) (SecretKey, PublicKey) {
 		tmp := new(big.Int)
 		e, err = rand.Int(rand.Reader, tmp.Sub(phi, big.NewInt(2)))
 		e.Add(e, big.NewInt(2))
-		CheckErrorExit(err)
+		lib.CheckErrorExit(err)
 		gcdAns = gcd(e, phi)
 	}
 
@@ -60,14 +62,14 @@ func gcd(m *big.Int, n *big.Int) *big.Int {
 	return z
 }
 
-func enCrypt(key PublicKey, s *big.Int) *big.Int {
+func EnCrypt(key PublicKey, s *big.Int) *big.Int {
 	c := new(big.Int)
 
 	c.Exp(s, key.e, key.n)
 	return c
 }
 
-func deCrypt(sKey SecretKey, pKey PublicKey, c *big.Int) *big.Int {
+func DeCrypt(sKey SecretKey, pKey PublicKey, c *big.Int) *big.Int {
 	s := new(big.Int)
 
 	s.Exp(c, sKey.d, pKey.n)
