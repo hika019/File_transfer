@@ -5,7 +5,7 @@ gazelle(name = "gazelle")
 
 go_library(
     name = "crypt",
-    srcs = ["rsa.go"],
+    srcs = ["rsa.go", "aes.go"],
     deps = ["//lib"],
     importpath = "github.com/hika019/File_transfer/crypt",
     visibility = ["//visibility:public"],

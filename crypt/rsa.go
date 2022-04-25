@@ -18,7 +18,7 @@ type PublicKey struct {
 }
 
 //k=ビット数(2048~)
-func GenKey(k int) (SecretKey, PublicKey) {
+func GenKeyRSA(k int) (SecretKey, PublicKey) {
 	fmt.Println("genKey")
 	p, err := rand.Prime(rand.Reader, k/2)
 	lib.CheckErrorExit(err)
@@ -34,9 +34,8 @@ func GenKey(k int) (SecretKey, PublicKey) {
 	phi := new(big.Int)
 	phi.Mul(p.Sub(p, big.NewInt(1)), q.Sub(q, big.NewInt(1)))
 
-	gcdAns := big.NewInt(2)
 	e := big.NewInt(65537)
-	gcdAns = gcd(e, phi)
+	gcdAns := gcd(e, phi)
 	for big.NewInt(1).Cmp(gcdAns) != 0 {
 		tmp := new(big.Int)
 		e, err = rand.Int(rand.Reader, tmp.Sub(phi, big.NewInt(2)))
@@ -62,14 +61,14 @@ func gcd(m *big.Int, n *big.Int) *big.Int {
 	return z
 }
 
-func EnCrypt(key PublicKey, s *big.Int) *big.Int {
+func EnCryptRSA(key PublicKey, s *big.Int) *big.Int {
 	c := new(big.Int)
 
 	c.Exp(s, key.e, key.n)
 	return c
 }
 
-func DeCrypt(sKey SecretKey, pKey PublicKey, c *big.Int) *big.Int {
+func DeCryptRSA(sKey SecretKey, pKey PublicKey, c *big.Int) *big.Int {
 	s := new(big.Int)
 
 	s.Exp(c, sKey.d, pKey.n)

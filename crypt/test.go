@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	sKey, pKey := GenKey(1024 * 4)
+	sKey, pKey := GenKeyRSA(1024 * 4)
 
 	/*
 		fmt.Println(sKey.d)
@@ -17,9 +17,19 @@ func main() {
 
 	hoge := big.NewInt(123456789)
 	fmt.Println(hoge)
-	c := EnCrypt(pKey, hoge)
+	c := EnCryptRSA(pKey, hoge)
 	fmt.Println(c)
-	s := DeCrypt(sKey, pKey, c)
+	s := DeCryptRSA(sKey, pKey, c)
 	fmt.Println(s)
 
+	plainText := []byte("Bob loves Alice. But Alice hate Bob...")
+	key := []byte("passw0rdpassw0rdpassw0rdpassw0rd")
+	// Create new AES cipher block
+	block := GenAESBlock(key)
+
+	cipherText := EnCryptAES(block, plainText)
+	fmt.Printf("Cipher text: %x \n", cipherText)
+
+	block2 := GenAESBlock(key)
+	fmt.Printf("Decrypted text: %s\n", string(DecrptAES(block2, cipherText)))
 }
