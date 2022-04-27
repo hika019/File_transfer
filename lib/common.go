@@ -2,10 +2,13 @@ package lib
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"strconv"
 )
 
 const SocketByte int = 1200
@@ -16,9 +19,15 @@ const DataSizeBytePos2 int = SocketDataByte + 2
 
 const SHA256ByteLen int = 32
 
-func IntToByte(bin []byte, i uint16) []byte {
-	bin[DataSizeBytePos1] = uint8(i % 256)
-	bin[DataSizeBytePos2] = uint8((i / 256) % 256)
+type config struct {
+	SentIP    string `json:'sentIP'`
+	ReceiveIP string `json:'receivIP'`
+}
+
+func IntToByte(i uint16) []byte {
+	bin := make([]byte, 2)
+	bin[0] = uint8(i % 256)
+	bin[1] = uint8((i / 256) % 256)
 
 	return bin[:]
 }
@@ -60,6 +69,8 @@ func MyAddr() string {
 	interfaces, err := net.Interfaces()
 	CheckErrorExit(err)
 
+	//config := *loadConfig()
+
 	for _, inter := range interfaces {
 		addr, err := inter.Addrs()
 		CheckErrorExit(err)
@@ -67,6 +78,7 @@ func MyAddr() string {
 		for _, a := range addr {
 			if ipnet, ok := a.(*net.IPNet); ok {
 				if !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+					fmt.Println(ipnet.Mask.Size())
 					return ipnet.IP.String()
 				}
 			}
@@ -90,7 +102,11 @@ func FileNameToByte(f string) []byte {
 		data[i] = v
 	}
 
-	data = IntToByte(data, uint16(len(fByte)))
+	tmp := IntToByte(uint16(len(fByte)))
+
+	data[DataSizeBytePos1] = tmp[0]
+	data[DataSizeBytePos2] = tmp[1]
+
 	hash := CreateSHA256(f)
 
 	for i, v := range hash {
@@ -106,4 +122,37 @@ func ByteToFileName(data []byte) (string, []byte) {
 	hash := data[SocketDataByte-SHA256ByteLen : SocketDataByte]
 
 	return string(filename), hash
+}
+
+func LoadConfig() *config {
+	f, err := os.Open("setting.json")
+	CheckErrorExit(err)
+
+	defer f.Close()
+
+	var cfg config
+	err = json.NewDecoder(f).Decode(&cfg)
+	CheckErrorExit(err)
+
+	return &cfg
+}
+
+func MaskStr(IP string) string {
+	mask, err := strconv.Atoi(IP[len(IP)-2:])
+	CheckErrorExit(err)
+
+	maskInt := uint32(4294967295)
+	maskInt = maskInt >> uint32(32-mask) << uint32(32-mask)
+	maskbin := make([]byte, 4)
+
+	for i := 0; i < 2; i++ {
+		tmp := uint16(maskInt >> (16 * i) & 65535)
+
+		bin := IntToByte(tmp)
+		maskbin[4-i*2-1] = bin[0]
+		maskbin[4-i*2-2] = bin[1]
+		fmt.Println(bin)
+
+	}
+	return hex.EncodeToString(maskbin)
 }
