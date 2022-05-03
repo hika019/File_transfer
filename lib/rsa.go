@@ -1,31 +1,31 @@
-package main
+package lib
 
 import (
 	"crypto/rand"
-	"fmt"
 	"math/big"
-
-	"github.com/hika019/File_transfer/lib"
 )
 
 type SecretKey struct {
-	d []byte
+	D []byte
 }
 
 type PublicKey struct {
-	n []byte
-	e []byte
+	N []byte
+	E []byte
 }
 
-//k=ビット数(2048~)
-func GenKeyRSA(k int) (SecretKey, PublicKey) {
-	fmt.Println("genKey")
-	p, err := rand.Prime(rand.Reader, k/2)
-	lib.CheckErrorExit(err)
+//GenKeyRSAのビット数
+const kLen int = 2048
+
+//k=ビット数(2048)
+func GenKeyRSA() (SecretKey, PublicKey) {
+	//fmt.Println("genKey")
+	p, err := rand.Prime(rand.Reader, kLen/2)
+	CheckErrorExit(err)
 	q := p
 	for p == q {
-		q, err = rand.Prime(rand.Reader, k/2)
-		lib.CheckErrorExit(err)
+		q, err = rand.Prime(rand.Reader, kLen/2)
+		CheckErrorExit(err)
 	}
 
 	n := new(big.Int)
@@ -40,17 +40,17 @@ func GenKeyRSA(k int) (SecretKey, PublicKey) {
 		tmp := new(big.Int)
 		e, err = rand.Int(rand.Reader, tmp.Sub(phi, big.NewInt(2)))
 		e.Add(e, big.NewInt(2))
-		lib.CheckErrorExit(err)
+		CheckErrorExit(err)
 		gcdAns = gcd(e, phi)
 	}
 
 	d := new(big.Int)
 	d.Exp(e, big.NewInt(-1), phi)
-	fmt.Println()
-	fmt.Printf("%x\n", d.Bytes())
+	//fmt.Println()
+	//fmt.Printf("%x\n", d.Bytes())
 
-	secretKey := SecretKey{d: d.Bytes()}
-	publickKey := PublicKey{n: n.Bytes(), e: e.Bytes()}
+	secretKey := SecretKey{D: d.Bytes()}
+	publickKey := PublicKey{N: n.Bytes(), E: e.Bytes()}
 
 	return secretKey, publickKey
 }
@@ -66,7 +66,7 @@ func gcd(m *big.Int, n *big.Int) *big.Int {
 func EnCryptRSA(key PublicKey, s []byte) []byte {
 	c := new(big.Int)
 
-	c.Exp(ByteToBigInt(s), ByteToBigInt(key.e), ByteToBigInt(key.n))
+	c.Exp(ByteToBigInt(s), ByteToBigInt(key.E), ByteToBigInt(key.N))
 	return c.Bytes()
 }
 
@@ -79,6 +79,6 @@ func ByteToBigInt(b []byte) *big.Int {
 func DeCryptRSA(sKey SecretKey, pKey PublicKey, c []byte) []byte {
 	s := new(big.Int)
 
-	s.Exp(ByteToBigInt(c), ByteToBigInt(sKey.d), ByteToBigInt(pKey.n))
+	s.Exp(ByteToBigInt(c), ByteToBigInt(sKey.D), ByteToBigInt(pKey.N))
 	return s.Bytes()
 }

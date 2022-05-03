@@ -5,8 +5,18 @@ gazelle(name = "gazelle")
 
 go_library(
     name = "lib",
-    srcs = ["common.go"],
-    importpath = "github.com/hika019/File_transfer/lib",
+    srcs = ["common.go", "rsa.go", "aes.go"],
+    deps = ["//lib"],
+    importpath = "github.com/hika019/File_transfer/crypt",
     visibility = ["//visibility:public"],
 
+)
+
+
+go_binary(
+    name = "test",
+    embed = [":lib"],
+    srcs = ["test.go"],
+    visibility = ["//visibility:public"],
+    pure = "on",
 )
