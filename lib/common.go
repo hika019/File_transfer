@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const SocketByte int = 1200
@@ -91,6 +92,17 @@ func MyAddr() string {
 
 func FileNameToByte(f string) []byte {
 	data := make([]byte, SocketByte)
+	hash := CreateSHA256(f)
+
+	if strings.Contains(f, "/") {
+		i := strings.LastIndex(f, "/")
+		f = f[i+1:]
+	}
+
+	if strings.Contains(f, `\`) {
+		i := strings.LastIndex(f, `\`)
+		f = f[i+1:]
+	}
 	fByte := []byte(f)
 
 	if SocketDataByte-SHA256ByteLen < len(fByte) {
@@ -106,8 +118,6 @@ func FileNameToByte(f string) []byte {
 
 	data[DataSizeBytePos1] = tmp[0]
 	data[DataSizeBytePos2] = tmp[1]
-
-	hash := CreateSHA256(f)
 
 	for i, v := range hash {
 		data[SocketDataByte-SHA256ByteLen+i] = v
