@@ -12,9 +12,10 @@ import (
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "Usage: %s message", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s message\n", os.Args[0])
 		os.Exit(1)
 	}
+	//TODO args[1]dir/fileの場合エラー
 
 	protocol := "tcp"
 	//serverIP := "192.168.11.50"
@@ -34,6 +35,8 @@ func main() {
 
 	conn, err := net.DialTCP(protocol, myAddr, tcpAddr)
 	lib.CheckErrorExit(err)
+
+	defer conn.Close()
 
 	messageBuf := lib.FileNameToByte(fileName)
 	fmt.Println(messageBuf)
