@@ -2,6 +2,7 @@ package lib
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 )
 
@@ -46,7 +47,7 @@ func ByteToPublickKey(d []byte) PublicKey {
 
 //k=ビット数(2048)
 func GenKeyRSA() (SecretKey, PublicKey) {
-	//fmt.Println("genKey")
+	fmt.Println("genKey")
 	p, err := rand.Prime(rand.Reader, KBitLen/2)
 	CheckErrorExit(err)
 	q := p
@@ -79,6 +80,7 @@ func GenKeyRSA() (SecretKey, PublicKey) {
 	secretKey := SecretKey{D: d.Bytes()}
 	publickKey := PublicKey{N: n.Bytes(), E: e.Bytes()}
 
+	fmt.Println("Gen RSA key")
 	return secretKey, publickKey
 }
 

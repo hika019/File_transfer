@@ -26,6 +26,8 @@ func main() {
 
 	fileName := os.Args[2]
 
+	useCrypt := true
+
 	tcpAddr, err := net.ResolveTCPAddr(protocol, serverIP+":"+serverPort)
 	lib.CheckErrorExit(err)
 
@@ -38,14 +40,41 @@ func main() {
 
 	defer conn.Close()
 
-	messageBuf := lib.FileNameToByte(fileName)
-	fmt.Println(messageBuf)
-	send(conn, fileName)
+	send(conn, fileName, useCrypt)
 
 }
 
-func send(conn net.Conn, fileName string) bool {
-	defer conn.Close()
+func GetPKey(conn net.Conn) lib.PublicKey {
+	fmt.Println("PKey req")
+	conn.Write([]byte{255, 192, 0, 0, 255})
+	conn.SetDeadline(time.Now().Add(2 * time.Second))
+	buff := make([]byte, lib.KByteLen*2)
+	mLen, err := conn.Read(buff)
+	lib.CheckError(err)
+
+	return lib.ByteToPublickKey(buff[:mLen])
+
+}
+
+func sentAESKey(conn net.Conn) []byte {
+	fmt.Println("call -> sentAESKey")
+	p := GetPKey(conn)
+
+	key := lib.GenAESKey(lib.AESKeyLen)
+
+	conn.Write(lib.EnCryptRSA(p, key))
+	fmt.Println("end -> sentAESKey")
+	return key
+}
+
+func send(conn net.Conn, fileName string, useCrypt bool) bool {
+
+	block := lib.InitAESBlock()
+
+	if useCrypt {
+		block = lib.GenAESBlock(sentAESKey(conn))
+	}
+
 	fp, err := os.Open(fileName)
 	lib.CheckError(err)
 
@@ -53,14 +82,13 @@ func send(conn net.Conn, fileName string) bool {
 
 	messageBuf := lib.FileNameToByte(fileName)
 
-	conn.Write(messageBuf)
+	conn.Write(lib.EnCryptAES(block, messageBuf, useCrypt))
 	fmt.Println("Sent the filename")
 	conn.SetDeadline(time.Now().Add(50 * time.Second))
 	for {
 
 		messageBuf = make([]byte, lib.SocketByte)
 		messageLen, err := fp.Read(messageBuf[:lib.SocketByte])
-		messageBuf = messageBuf[:messageLen]
 
 		if messageLen == 0 {
 			break
@@ -69,7 +97,7 @@ func send(conn net.Conn, fileName string) bool {
 			return false
 		}
 
-		_, err = conn.Write(messageBuf)
+		_, err = conn.Write(lib.EnCryptAES(block, messageBuf[:messageLen], useCrypt))
 		if lib.CheckError(err) == true {
 			return false
 		}

@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const SocketByte int = 1200
+const SocketByte int = 1024
 const SocketDataByte int = SocketByte - 4
 const DataSizeBytePos0 int = SocketDataByte + 0
 const DataSizeBytePos1 int = SocketDataByte + 1
@@ -127,7 +127,10 @@ func FileNameToByte(f string) []byte {
 }
 
 func ByteToFileName(data []byte) (string, []byte) {
+	fmt.Println(data)
+	fmt.Println(len(data))
 	fileNameLen := ByteToInt(data)
+	fmt.Println(fileNameLen)
 	filename := data[:fileNameLen]
 	hash := data[SocketDataByte-SHA256ByteLen : SocketDataByte]
 

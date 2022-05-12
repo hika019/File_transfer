@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/aes"
 	"fmt"
 	"net"
 	"os"
@@ -20,19 +21,23 @@ func main() {
 	listner, err := net.ListenTCP(protocol, tcpAddr)
 	lib.CheckErrorExit(err)
 
+	s, p := lib.GenKeyRSA()
+
 	for {
 		conn, err := listner.Accept()
 		if err != nil {
 			continue
 		}
 
-		go handleClient(conn)
+		go handleClient(conn, p, s)
 
 	}
 }
 
-func handleClient(conn net.Conn) {
-	defer conn.Close()
+func handleClient(conn net.Conn, p lib.PublicKey, s lib.SecretKey) {
+	useCrypt := false
+	block := lib.InitAESBlock()
+
 	addr, ok := conn.RemoteAddr().(*net.TCPAddr)
 	if !ok {
 		return
@@ -51,34 +56,64 @@ func handleClient(conn net.Conn) {
 	}
 
 	messageBuf := make([]byte, lib.SocketByte)
-
 	messageLen, err := conn.Read(messageBuf)
+	fmt.Println(messageLen)
 	//EOFエラー回避
 	if messageLen == 0 {
 		return
 	}
-
 	if lib.CheckError(err) {
 		return
 	}
-	fmt.Println(messageBuf)
 
-	fileName, hash := lib.ByteToFileName(messageBuf[:messageLen])
+	if reflect.DeepEqual(messageBuf[:messageLen], []byte{255, 192, 0, 0, 255}) {
+
+		fmt.Println("Use Crypt")
+		conn.Write(lib.PublicKeyToByte(p))
+		useCrypt = true
+		//fmt.Println(p)
+		messageBuf = make([]byte, lib.SocketByte+aes.BlockSize)
+		messageLen, err = conn.Read(messageBuf)
+		//fmt.Println(messageBuf)
+		key := lib.DeCryptRSA(s, p, messageBuf[:messageLen])
+		fmt.Println(key)
+		block = lib.GenAESBlock(key)
+
+		//EOFエラー回避
+		if messageLen == 0 {
+			return
+		}
+		if lib.CheckError(err) {
+			return
+		}
+
+		messageBuf = make([]byte, lib.SocketByte+aes.BlockSize)
+		messageLen, err = conn.Read(messageBuf)
+		//EOFエラー回避
+		if messageLen == 0 {
+			return
+		}
+		if lib.CheckError(err) {
+			return
+		}
+	}
+
+	fileName, hash := lib.ByteToFileName(lib.DecryptAES(block, messageBuf[:messageLen], useCrypt))
 
 	fileName = senderIP + "/" + fileName
 	//fmt.Println("filename: ", fileName, hash)
 
-	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
+	ftmp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
 	if lib.CheckError(err) {
 		return
 	}
-	defer fp.Close()
+	defer ftmp.Close()
 
 	receiveCount := 0
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-		messageBuf = make([]byte, lib.SocketByte)
+		messageBuf = make([]byte, lib.SocketByte+aes.BlockSize)
 		messageLen, err = conn.Read(messageBuf)
 
 		//EOFエラー回避
@@ -88,8 +123,8 @@ func handleClient(conn net.Conn) {
 		}
 
 		lib.CheckErrorExit(err)
-
-		_, err = fp.Write(messageBuf[:messageLen])
+		lib.DecryptAES(block, messageBuf[:messageLen], useCrypt)
+		_, err = ftmp.Write(messageBuf[:messageLen])
 		lib.CheckError(err)
 		receiveCount++
 	}
