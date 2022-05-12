@@ -5,7 +5,18 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"io"
+	"math/big"
 )
+
+func GenAESKey(keyLen int) []byte {
+	key := make([]byte, keyLen)
+	for i := 0; i < keyLen; i++ {
+		tmp, err := rand.Int(rand.Reader, big.NewInt(255))
+		CheckErrorExit(err)
+		key[i] = uint8(tmp.Int64() % 255)
+	}
+	return key
+}
 
 func GenAESBlock(key []byte) cipher.Block {
 	block, err := aes.NewCipher(key)
