@@ -15,16 +15,43 @@ type PublicKey struct {
 }
 
 //GenKeyRSAのビット数
-const kLen int = 2048
+const KBitLen int = 2048
+const KByteLen int = KBitLen / 8
+
+func PublicKeyToByte(p PublicKey) []byte {
+	d := make([]byte, KByteLen*2)
+
+	j := KByteLen - 1
+	for i := len(p.N) - 1; 0 <= i; i-- {
+		d[j] = p.N[i]
+		j--
+	}
+
+	j = KByteLen*2 - 1
+	for i := len(p.E) - 1; 0 <= i; i-- {
+		d[j] = p.E[i]
+		j--
+	}
+	return d
+}
+
+func ByteToPublickKey(d []byte) PublicKey {
+	p := new(PublicKey)
+
+	p.N = d[0:KByteLen]
+	p.E = d[KByteLen : KByteLen*2]
+
+	return *p
+}
 
 //k=ビット数(2048)
 func GenKeyRSA() (SecretKey, PublicKey) {
 	//fmt.Println("genKey")
-	p, err := rand.Prime(rand.Reader, kLen/2)
+	p, err := rand.Prime(rand.Reader, KBitLen/2)
 	CheckErrorExit(err)
 	q := p
 	for p == q {
-		q, err = rand.Prime(rand.Reader, kLen/2)
+		q, err = rand.Prime(rand.Reader, KBitLen/2)
 		CheckErrorExit(err)
 	}
 
