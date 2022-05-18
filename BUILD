@@ -19,3 +19,9 @@ go_binary(
     visibility = ["//visibility:public"],
     pure = "on",
 )
+
+go_binary(
+    name = "test",
+    deps = ["//lib"],
+    srcs = ["test.go"],
+)
