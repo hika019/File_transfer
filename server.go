@@ -98,35 +98,58 @@ func handleClient(conn net.Conn, p lib.PublicKey, s lib.SecretKey) {
 		}
 	}
 
+	fmt.Println("Crypt: ", useCrypt)
+
 	fileName, hash := lib.ByteToFileName(lib.DecryptAES(block, messageBuf[:messageLen], useCrypt))
 
 	fileName = senderIP + "/" + fileName
 	//fmt.Println("filename: ", fileName, hash)
 
-	ftmp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
+	fp, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND|os.O_TRUNC, 0666)
 	if lib.CheckError(err) {
 		return
 	}
-	defer ftmp.Close()
+	defer fp.Close()
 
-	receiveCount := 0
+	buff := make([]byte, 0, (lib.SocketByte+aes.BlockSize)*2)
+	buffLen := 0
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		messageBuf = make([]byte, lib.SocketByte+aes.BlockSize)
 		messageLen, err = conn.Read(messageBuf)
 
+		buff = append(buff, messageBuf...)
+		fmt.Println(messageLen)
+		buffLen += messageLen
+		fmt.Println(buffLen)
+
 		//EOFエラー回避
 		if messageLen == 0 {
+			//meta := make([]byte, lib.SocketByte+aes.BlockSize-buffLen)
+			//messageBuf = append(messageBuf, meta...)
+
+			if useCrypt {
+				_, err = fp.Write(lib.DecryptAES(block, buff, useCrypt)[:buffLen-aes.BlockSize])
+			} else {
+				_, err = fp.Write(lib.DecryptAES(block, buff, useCrypt)[:buffLen])
+			}
+
+			lib.CheckError(err)
 			fmt.Println("download file")
 			break
 		}
 
 		lib.CheckErrorExit(err)
-		lib.DecryptAES(block, messageBuf[:messageLen], useCrypt)
-		_, err = ftmp.Write(messageBuf[:messageLen])
-		lib.CheckError(err)
-		receiveCount++
+
+		if buffLen >= lib.SocketByte+aes.BlockSize {
+			_, err = fp.Write(lib.DecryptAES(block, messageBuf[:messageLen], useCrypt))
+			lib.CheckError(err)
+
+			buff = buff[lib.SocketByte+aes.BlockSize:]
+			buffLen -= lib.SocketByte + aes.BlockSize
+		}
+
 	}
 
 	if reflect.DeepEqual(hash, lib.CreateSHA256(fileName)) {
