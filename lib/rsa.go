@@ -80,7 +80,7 @@ func GenKeyRSA() (SecretKey, PublicKey) {
 	secretKey := SecretKey{D: d.Bytes()}
 	publickKey := PublicKey{N: n.Bytes(), E: e.Bytes()}
 
-	fmt.Println("Gen RSA key")
+	fmt.Println("Gen RSA key!!")
 	return secretKey, publickKey
 }
 

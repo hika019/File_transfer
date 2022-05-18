@@ -36,7 +36,7 @@ func InitAESBlock() cipher.Block {
 }
 
 func EnCryptAES(block cipher.Block, s []byte, useCrypt bool) []byte {
-	fmt.Println("call -> EnCryptAES")
+	//fmt.Println("call -> EnCryptAES")
 	if !useCrypt {
 		return s
 	}
@@ -54,7 +54,7 @@ func EnCryptAES(block cipher.Block, s []byte, useCrypt bool) []byte {
 }
 
 func DecryptAES(block cipher.Block, c []byte, useCrypt bool) []byte {
-	fmt.Println("call -> DecryptAES")
+	//fmt.Println("call -> DecryptAES")
 	if !useCrypt {
 		return c
 	}
@@ -63,6 +63,6 @@ func DecryptAES(block cipher.Block, c []byte, useCrypt bool) []byte {
 	decryptedText := make([]byte, len(c[aes.BlockSize:]))
 	decryptStream := cipher.NewCTR(block, c[:aes.BlockSize])
 	decryptStream.XORKeyStream(decryptedText, c[aes.BlockSize:])
-	fmt.Println("end -> DecryptAES")
+	//fmt.Println("end -> DecryptAES")
 	return decryptedText
 }

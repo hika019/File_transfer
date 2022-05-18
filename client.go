@@ -26,7 +26,7 @@ func main() {
 
 	fileName := os.Args[2]
 
-	useCrypt := true
+	useCrypt := false
 
 	tcpAddr, err := net.ResolveTCPAddr(protocol, serverIP+":"+serverPort)
 	lib.CheckErrorExit(err)
@@ -57,19 +57,20 @@ func GetPKey(conn net.Conn) lib.PublicKey {
 }
 
 func sentAESKey(conn net.Conn) []byte {
-	fmt.Println("call -> sentAESKey")
+	//fmt.Println("call -> sentAESKey")
 	p := GetPKey(conn)
 
 	key := lib.GenAESKey(lib.AESKeyLen)
 
 	conn.Write(lib.EnCryptRSA(p, key))
-	fmt.Println("end -> sentAESKey")
+	//fmt.Println("end -> sentAESKey")
 	return key
 }
 
 func send(conn net.Conn, fileName string, useCrypt bool) bool {
 
 	block := lib.InitAESBlock()
+	fmt.Println("crypt: ", useCrypt)
 
 	if useCrypt {
 		block = lib.GenAESBlock(sentAESKey(conn))

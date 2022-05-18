@@ -120,9 +120,7 @@ func handleClient(conn net.Conn, p lib.PublicKey, s lib.SecretKey) {
 		messageLen, err = conn.Read(messageBuf)
 
 		buff = append(buff, messageBuf...)
-		fmt.Println(messageLen)
 		buffLen += messageLen
-		fmt.Println(buffLen)
 
 		//EOFエラー回避
 		if messageLen == 0 {
